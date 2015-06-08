@@ -9,6 +9,7 @@
 #ifndef test_HashTable_h
 #define test_HashTable_h
 #include <string>
+#include <vector>
 using namespace std;
 
 struct HashList
@@ -21,7 +22,8 @@ class HashTable
 {
 private:
 	unsigned long size;
-	HashList **hash_array;
+	vector<HashList*> hash_array;
+	bool resizing, resize;
 	
 	unsigned long HashFunction(const string &str);
 	void ClearList(HashList *list);

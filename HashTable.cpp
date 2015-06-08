@@ -27,39 +27,38 @@ unsigned long HashTable::HashFunction(const string &str)
 void HashTable::ClearList(HashList *list)
 {
 	if (list->next) ClearList(list->next);
-	free(list);
+	delete(list);
 }
 
 void HashTable::RemapList(HashList *list)
 {
 	if (list->next) RemapList(list->next);
 	Add(list->key, list->value);
-	free(list);
+	delete(list);
 }
 
 void HashTable::ResizeArray(void)
 {
-	HashList **old_array = hash_array;
-	hash_array = new HashList*[size*=2];
+	vector<HashList*> old_array = hash_array;
+	hash_array = *new vector<HashList*>(size*=2);
 	for (unsigned long i = 0; i < size; i++) hash_array[i] = NULL;
 	for (unsigned long i = 0; i < size >> 1; i++)
 	{
 		if (old_array[i]) RemapList(old_array[i]);
 	}
-	free(old_array);
 }
 
 HashTable::HashTable()
 {
 	size = 256;
-	hash_array = new HashList*[size];
+	hash_array = *new vector<HashList*>(size);
 	for (unsigned long i = 0; i < size; i++) hash_array[i] = NULL;
 }
 	
 HashTable::HashTable(const unsigned long size)
 {
 	this->size = size;
-	hash_array = new HashList*[size];
+	hash_array = *new vector<HashList*>(size);
 	for (unsigned long i = 0; i < size; i++) hash_array[i] = NULL;
 }
 
@@ -69,7 +68,6 @@ HashTable::~HashTable()
 	{
 		if (hash_array[i]) ClearList(hash_array[i]);
 	}
-	free(hash_array);
 }
 
 bool HashTable::Add(const string &key, const string &value)
@@ -86,14 +84,27 @@ bool HashTable::Add(const string &key, const string &value)
 		{
 			if (!last_value->key.compare(key))
 			{
-				free(new_value);
+				delete(new_value);
 				return false;
 			}
 			if (last_value->next) last_value = last_value->next;
 			else break;
 		}
 		last_value->next = new_value;
-		if (count > 2) ResizeArray();
+		if (count > 4)
+		{
+			if (resizing) resize = true;
+			else
+			{
+				do
+				{
+					resize = false;
+					resizing = true;
+					ResizeArray();
+					resizing = false;
+				} while (resize);
+			}
+		}
 	}
 	else hash_array[HashFunction(key)] = new_value;
 	return true;
@@ -123,7 +134,7 @@ bool HashTable::Delete(const string &key)
 			{
 				if (last_value == current_value) hash_array[HashFunction(key)] = current_value->next;
 				else last_value = current_value->next;
-				free(current_value);
+				delete(current_value);
 				return true;
 			}
 			if (current_value->next)
