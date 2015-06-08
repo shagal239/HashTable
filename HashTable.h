@@ -22,7 +22,7 @@ class HashTable
 {
 private:
 	unsigned long size;
-	vector<HashList*> hash_array;
+	vector<HashList*> *hash_array;
 	bool resizing, resize;
 	
 	unsigned long HashFunction(const string &str);

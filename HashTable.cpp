@@ -27,46 +27,46 @@ unsigned long HashTable::HashFunction(const string &str)
 void HashTable::ClearList(HashList *list)
 {
 	if (list->next) ClearList(list->next);
-	delete(list);
+	delete list;
 }
 
 void HashTable::RemapList(HashList *list)
 {
 	if (list->next) RemapList(list->next);
 	Add(list->key, list->value);
-	delete(list);
+	delete list;
 }
 
 void HashTable::ResizeArray(void)
 {
-	vector<HashList*> old_array = hash_array;
-	hash_array = *new vector<HashList*>(size*=2);
-	for (unsigned long i = 0; i < size; i++) hash_array[i] = NULL;
+	vector<HashList*> *old_array = hash_array;
+	hash_array = new vector<HashList*>(size*=2);
 	for (unsigned long i = 0; i < size >> 1; i++)
 	{
-		if (old_array[i]) RemapList(old_array[i]);
+		if ((*old_array)[i]) RemapList((*old_array)[i]);
 	}
+	delete old_array;
 }
 
 HashTable::HashTable()
 {
 	size = 256;
-	hash_array = *new vector<HashList*>(size);
-	for (unsigned long i = 0; i < size; i++) hash_array[i] = NULL;
+	hash_array = new vector<HashList*>(size);
+	resizing = resize = false;
 }
 	
 HashTable::HashTable(const unsigned long size)
 {
 	this->size = size;
-	hash_array = *new vector<HashList*>(size);
-	for (unsigned long i = 0; i < size; i++) hash_array[i] = NULL;
+	hash_array = new vector<HashList*>(size);
+	resizing = resize = false;
 }
 
 HashTable::~HashTable()
 {
 	for (unsigned long i = 0; i < size; i++)
 	{
-		if (hash_array[i]) ClearList(hash_array[i]);
+		if ((*hash_array)[i]) ClearList((*hash_array)[i]);
 	}
 }
 
@@ -77,14 +77,14 @@ bool HashTable::Add(const string &key, const string &value)
 	new_value -> value = value;
 	new_value -> next = NULL;
 	HashList *last_value;
-	if ((last_value = hash_array[HashFunction(key)]))
+	if ((last_value = (*hash_array)[HashFunction(key)]))
 	{
 		int count = 1;
 		for (;;++count)
 		{
-			if (!last_value->key.compare(key))
+			if (last_value->key == key)
 			{
-				delete(new_value);
+				delete new_value;
 				return false;
 			}
 			if (last_value->next) last_value = last_value->next;
@@ -106,17 +106,17 @@ bool HashTable::Add(const string &key, const string &value)
 			}
 		}
 	}
-	else hash_array[HashFunction(key)] = new_value;
+	else (*hash_array)[HashFunction(key)] = new_value;
 	return true;
 }
 
 string* HashTable::Search(const string &key)
 {
-	HashList *current_value = hash_array[HashFunction(key)];
+	HashList *current_value = (*hash_array)[HashFunction(key)];
 	if (current_value)
 		for (;;)
 		{
-		   if (!current_value->key.compare(key)) return &current_value->value;
+		   if (current_value->key == key) return &current_value->value;
 		   if (current_value->next) current_value = current_value->next;
 		   else break;
 		}
@@ -125,16 +125,16 @@ string* HashTable::Search(const string &key)
 	
 bool HashTable::Delete(const string &key)
 {
-	HashList *current_value = hash_array[HashFunction(key)];
+	HashList *current_value = (*hash_array)[HashFunction(key)];
 	HashList *last_value = current_value;
 	if (current_value)
 		for (;;)
 		{
-			if (!current_value->key.compare(key))
+			if (current_value->key == key)
 			{
-				if (last_value == current_value) hash_array[HashFunction(key)] = current_value->next;
-				else last_value = current_value->next;
-				delete(current_value);
+				if (last_value == current_value) (*hash_array)[HashFunction(key)] = current_value->next;
+				else last_value->next = current_value->next;
+				delete current_value;
 				return true;
 			}
 			if (current_value->next)
